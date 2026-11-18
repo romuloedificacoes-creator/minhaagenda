@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Eletrônica</title>
+    
+    <!-- Importando o Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configurando o Tailwind para aceitar Modo Escuro por classe -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Importando React e ReactDOM (Versão 18) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Importando Babel para compilar o código JSX no navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; }
+        /* Scrollbar customizada para as colunas */
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
+    </style>
+</head>
+<body>
+    <!-- A aplicação React será renderizada dentro desta div -->
+    <div id="root"></div>
+
+    <!-- Código da Aplicação em React -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Ícones em formato SVG
+        const PlusIcon = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        );
+
+        const TrashIcon = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        );
+
+        const EditIcon = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        );
+
+        const CheckIcon = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        );
+
+        const XIcon = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        );
+
+        const CheckCircleIcon = ({ completed }) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={completed ? "#4F46E5" : "none"} stroke={completed ? "#4F46E5" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>{completed && <polyline points="22 4 12 14.01 9 11.01" stroke="white"></polyline>}</svg>
+        );
+
+        const ChevronLeftIcon = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        );
+
+        const ChevronRightIcon = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        );
+
+        const SunIcon = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        );
+
+        const MoonIcon = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        );
+
+        function AgendaApp() {
+          const [tasks, setTasks] = useState([]);
+          const [user, setUser] = useState(null);
+
+          const [baseDate, setBaseDate] = useState(new Date());
+          const [newTasksInputs, setNewTasksInputs] = useState({});
+          
+          // Estados para controlar a edição de tarefas
+          const [editingTaskId, setEditingTaskId] = useState(null);
+          const [editingText, setEditingText] = useState('');
+
+          const [darkMode, setDarkMode] = useState(() => {
+            try {
+              const savedMode = localStorage.getItem('agenda-dark-mode');
+              return savedMode ? JSON.parse(savedMode) : false;
+            } catch (error) {
+              return false;
+            }
+          });
+
+          // Sincronização com o Firebase Cloud
+          useEffect(() => {
+            let unsubscribe = null;
+
+            const setupFirebase = async () => {
+              try {
+                // Importações dinâmicas do Firebase
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+                const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                const { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'agenda-eletronica-app';
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                
+                const app = initializeApp(firebaseConfig);
+                const auth = getAuth(app);
+                const db = getFirestore(app);
+
+                // Variável global para acesso nas funções
+                window.fb = { db, doc, setDoc, deleteDoc, collection, appId };
+
+                let currentUser = null;
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                  const cred = await signInWithCustomToken(auth, __initial_auth_token);
+                  currentUser = cred.user;
+                } else {
+                  const cred = await signInAnonymously(auth);
+                  currentUser = cred.user;
+                }
+                
+                setUser(currentUser);
+
+                // Migrar dados locais para a nuvem na primeira vez
+                const localTasks = localStorage.getItem('minha-agenda-mensal');
+                if (localTasks) {
+                  try {
+                    const parsed = JSON.parse(localTasks);
+                    if (parsed && parsed.length > 0) {
+                      for (const t of parsed) {
+                        await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', t.id), {
+                          text: t.text, date: t.date, completed: t.completed
+                        });
+                      }
+                      localStorage.removeItem('minha-agenda-mensal'); // Previne migrar duas vezes
+                    }
+                  } catch (e) { console.error("Erro ao migrar dados:", e); }
+                }
+
+                // Escutar atualizações do banco de dados na nuvem (em tempo real)
+                const tasksRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks');
+                unsubscribe = onSnapshot(tasksRef, (snapshot) => {
+                  const cloudTasks = [];
+                  snapshot.forEach((docSnap) => {
+                    cloudTasks.push({ id: docSnap.id, ...docSnap.data() });
+                  });
+                  setTasks(cloudTasks);
+                }, (error) => {
+                  console.error("Erro no Sincronismo:", error);
+                });
+
+              } catch (err) {
+                console.error("Erro ao inicializar Firebase:", err);
+              }
+            };
+
+            setupFirebase();
+
+            return () => {
+              if (unsubscribe) unsubscribe();
+            };
+          }, []);
+
+          useEffect(() => {
+            localStorage.setItem('agenda-dark-mode', JSON.stringify(darkMode));
+            // Aplica a classe 'dark' no body ou html caso necessário, mas aqui a div pai cuida disso.
+          }, [darkMode]);
+
+          const getStartOfWeek = (date) => {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            const day = d.getDay();
+            const diff = d.getDate() - day;
+            return new Date(d.setDate(diff));
+          };
+
+          const formatDateStr = (date) => {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          };
+
+          const startOfWeek = getStartOfWeek(baseDate);
+          const weekDays = Array.from({ length: 7 }).map((_, i) => {
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + i);
+            return d;
+          });
+
+          const changeWeek = (offset) => {
+            const newDate = new Date(baseDate);
+            newDate.setDate(baseDate.getDate() + offset * 7);
+            setBaseDate(newDate);
+          };
+
+          const goToToday = () => setBaseDate(new Date());
+
+          const monthName = startOfWeek.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+          const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+          const DIAS_SEMANA_CURTO = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+          const todayStr = formatDateStr(new Date());
+
+          const handleInputChange = (dateStr, value) => {
+            setNewTasksInputs(prev => ({ ...prev, [dateStr]: value }));
+          };
+
+          const addTask = async (e, dateStr) => {
+            e.preventDefault();
+            const text = newTasksInputs[dateStr];
+            if (!text || !text.trim() || !user || !window.fb) return;
+
+            const newId = Date.now().toString();
+            const newTask = {
+              text: text.trim(),
+              date: dateStr,
+              completed: false,
+            };
+
+            // Atualização otimista imediata na interface
+            setTasks(prev => [...prev, { id: newId, ...newTask }]);
+            setNewTasksInputs(prev => ({ ...prev, [dateStr]: '' }));
+
+            try {
+              const { db, doc, setDoc, appId } = window.fb;
+              const taskRef = doc(db, 'artifacts', appId, 'users', user.uid, 'tasks', newId);
+              await setDoc(taskRef, newTask);
+            } catch (error) {
+              console.error("Erro ao adicionar:", error);
+            }
+          };
+
+          const toggleTask = async (id) => {
+            if (!user || !window.fb) return;
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+
+            // Atualização otimista imediata na interface
+            setTasks(prev => prev.map(t => 
+              t.id === id ? { ...t, completed: !t.completed } : t
+            ));
+
+            try {
+              const { db, doc, setDoc, appId } = window.fb;
+              const taskRef = doc(db, 'artifacts', appId, 'users', user.uid, 'tasks', id);
+              await setDoc(taskRef, { completed: !task.completed }, { merge: true });
+            } catch (error) {
+              console.error("Erro ao concluir:", error);
+            }
+          };
+
+          const deleteTask = async (id) => {
+            if (!user || !window.fb) return;
+            
+            // Atualização otimista imediata na interface
+            setTasks(prev => prev.filter(t => t.id !== id));
+
+            try {
+              const { db, doc, deleteDoc, appId } = window.fb;
+              const taskRef = doc(db, 'artifacts', appId, 'users', user.uid, 'tasks', id);
+              await deleteDoc(taskRef);
+            } catch (error) {
+              console.error("Erro ao excluir:", error);
+            }
+          };
+
+          const startEdit = (task) => {
+            setEditingTaskId(task.id);
+            setEditingText(task.text);
+          };
+
+          const cancelEdit = () => {
+            setEditingTaskId(null);
+            setEditingText('');
+          };
+
+          const saveEdit = async (id) => {
+            if (!user || !window.fb) return;
+            const newText = editingText.trim();
+            
+            if (!newText) {
+              cancelEdit();
+              return;
+            }
+
+            // Atualização otimista na interface
+            setTasks(prev => prev.map(t => 
+              t.id === id ? { ...t, text: newText } : t
+            ));
+            setEditingTaskId(null);
+
+            try {
+              const { db, doc, setDoc, appId } = window.fb;
+              const taskRef = doc(db, 'artifacts', appId, 'users', user.uid, 'tasks', id);
+              // Atualiza apenas o texto da tarefa na nuvem
+              await setDoc(taskRef, { text: newText }, { merge: true });
+            } catch (error) {
+              console.error("Erro ao editar:", error);
+            }
+          };
+
+          const tarefasDaSemana = tasks.filter(t => weekDays.some(d => formatDateStr(d) === t.date));
+          const weekProgress = tarefasDaSemana.length === 0 ? 0 : Math.round((tarefasDaSemana.filter(t => t.completed).length / tarefasDaSemana.length) * 100);
+
+          return (
+            <div className={darkMode ? 'dark' : ''}>
+              <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col items-center p-4 sm:p-6 font-sans text-gray-800 dark:text-gray-100 transition-colors duration-300">
+                <div className="w-full max-w-[1400px] mt-4">
+                  
+                  {/* Cabeçalho */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 sm:p-6 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 border border-gray-200 dark:border-gray-700 transition-colors">
+                    <div>
+                      <h1 className="text-2xl sm:text-3xl font-bold text-indigo-700 dark:text-indigo-400 transition-colors">Agenda Mensal</h1>
+                      <div className="flex items-center gap-3 mt-2">
+                        <p className="text-gray-500 dark:text-gray-400 text-sm font-medium transition-colors">Progresso da Semana:</p>
+                        <div className="w-32 h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: `${weekProgress}%` }}></div>
+                        </div>
+                        <span className="text-sm text-indigo-600 dark:text-indigo-400 font-bold">{weekProgress}%</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-1 transition-colors">
+                      <button onClick={() => changeWeek(-1)} className="p-2 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-gray-600 rounded-lg transition-all" title="Semana Anterior">
+                        <ChevronLeftIcon />
+                      </button>
+                      <div className="w-48 text-center font-medium text-gray-700 dark:text-gray-200 capitalize transition-colors">
+                        {capitalizedMonth}
+                      </div>
+                      <button onClick={() => changeWeek(1)} className="p-2 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-gray-600 rounded-lg transition-all" title="Próxima Semana">
+                        <ChevronRightIcon />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Indicador de Status da Nuvem */}
+                      <div className="hidden sm:flex items-center gap-1.5 mr-2 px-3 py-1.5 rounded-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 transition-colors">
+                        {user ? (
+                          <><div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e]"></div> <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">Nuvem Ativa</span></>
+                        ) : (
+                          <><div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div> <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">Conectando...</span></>
+                        )}
+                      </div>
+                      
+                      <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                        {darkMode ? <SunIcon /> : <MoonIcon />}
+                      </button>
+                      <button onClick={goToToday} className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-medium rounded-lg transition-colors border border-indigo-100 dark:border-indigo-800">
+                        Ir para Hoje
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Painel Kanban (Dias) */}
+                  <div className="flex xl:grid xl:grid-cols-7 gap-4 overflow-x-auto pb-6 snap-x w-full custom-scrollbar">
+                    {weekDays.map((day, index) => {
+                      const dateStr = formatDateStr(day);
+                      const isToday = dateStr === todayStr;
+                      const dayTasks = tasks.filter(t => t.date === dateStr);
+                      const inputValue = newTasksInputs[dateStr] || '';
+
+                      return (
+                        <div key={dateStr} className={`min-w-[280px] xl:min-w-0 snap-center flex-shrink-0 rounded-2xl border shadow-sm flex flex-col h-[65vh] transition-colors ${isToday ? 'border-indigo-400 dark:border-indigo-500 ring-2 ring-indigo-50 dark:ring-indigo-900 bg-white dark:bg-gray-800' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'}`}>
+                          
+                          {/* Cabeçalho do Dia */}
+                          <div className={`p-4 border-b dark:border-gray-700 rounded-t-2xl transition-colors ${isToday ? 'bg-indigo-50 dark:bg-indigo-900/40' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
+                            <div className="flex justify-between items-baseline">
+                              <h3 className={`font-semibold transition-colors ${isToday ? 'text-indigo-700 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                {DIAS_SEMANA_CURTO[index]}
+                              </h3>
+                              <span className={`text-lg font-bold transition-colors ${isToday ? 'text-indigo-700 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                {day.getDate()}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">
+                              {dayTasks.length} {dayTasks.length === 1 ? 'tarefa' : 'tarefas'}
+                            </span>
+                          </div>
+
+                          {/* Adicionar */}
+                          <div className="p-3 border-b border-gray-100 dark:border-gray-700 transition-colors">
+                            <form onSubmit={(e) => addTask(e, dateStr)} className="flex gap-2">
+                              <input
+                                type="text"
+                                value={inputValue}
+                                onChange={(e) => handleInputChange(dateStr, e.target.value)}
+                                placeholder="Nova tarefa..."
+                                className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                              />
+                              <button type="submit" disabled={!inputValue.trim()} className="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white p-2 rounded-lg flex items-center justify-center transition-colors">
+                                <PlusIcon />
+                              </button>
+                            </form>
+                          </div>
+
+                          {/* Lista */}
+                          <div className="p-3 overflow-y-auto flex-1 space-y-2 custom-scrollbar">
+                            {dayTasks.length === 0 ? (
+                              <div className="text-center py-6 text-gray-400 dark:text-gray-500 text-sm transition-colors">Livre</div>
+                            ) : (
+                              dayTasks.map((task) => (
+                                <div key={task.id} className={`group flex items-start gap-2 p-2 rounded-lg border transition-all ${task.completed ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-700 opacity-60' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-600 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-500'}`}>
+                                  
+                                  {editingTaskId === task.id ? (
+                                    // Modo de Edição
+                                    <div className="flex-1 flex flex-col gap-2 w-full">
+                                      <input
+                                        type="text"
+                                        value={editingText}
+                                        onChange={(e) => setEditingText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') saveEdit(task.id);
+                                          if (e.key === 'Escape') cancelEdit();
+                                        }}
+                                        autoFocus
+                                        className="w-full px-2 py-1 text-sm bg-white dark:bg-gray-900 border border-indigo-300 dark:border-indigo-500 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-800 dark:text-gray-100 transition-colors"
+                                      />
+                                      <div className="flex justify-end gap-1">
+                                        <button onClick={cancelEdit} className="p-1 text-gray-500 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-700 rounded" title="Cancelar">
+                                          <XIcon />
+                                        </button>
+                                        <button onClick={() => saveEdit(task.id)} className="p-1 text-white bg-indigo-500 hover:bg-indigo-600 transition-colors rounded" title="Salvar">
+                                          <CheckIcon />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    // Modo de Visualização Padrão
+                                    <>
+                                      <button onClick={() => toggleTask(task.id)} className="flex-shrink-0 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 mt-0.5 transition-colors focus:outline-none">
+                                        <CheckCircleIcon completed={task.completed} />
+                                      </button>
+                                      <div className="flex-1 min-w-0" onDoubleClick={() => startEdit(task)}>
+                                        <p className={`text-sm leading-snug break-words transition-colors cursor-text ${task.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'}`}>
+                                          {task.text}
+                                        </p>
+                                      </div>
+                                      <div className="flex flex-shrink-0 opacity-0 group-hover:opacity-100 lg:focus:opacity-100 focus:opacity-100 transition-opacity gap-1">
+                                        <button onClick={() => startEdit(task)} className="text-gray-300 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 p-1 rounded transition-colors" title="Editar">
+                                          <EditIcon />
+                                        </button>
+                                        <button onClick={() => deleteTask(task.id)} className="text-gray-300 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 p-1 rounded transition-colors" title="Excluir">
+                                          <TrashIcon />
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Renderização principal do React para a Div Root
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AgendaApp />);
+    </script>
+</body>
+</html>
